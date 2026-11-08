@@ -17,3 +17,8 @@ A "Thank you for applying." page, and the header flips from logout to login.
 
 - Read any acknowledgment text before initialing. Look for arbitration clauses and other commitments; surface anything unusual to the user.
 - Some tenants ask facts you do not have (one asked T-shirt size and food allergies). If an answer is not in `profile/answers.md`, park the application and ask the user. Never invent a personal fact.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

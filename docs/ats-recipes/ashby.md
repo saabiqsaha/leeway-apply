@@ -76,3 +76,8 @@ Build a map from label text to `closest('[class*=fieldEntry]')` to its input (or
 - Screening gates (export control or US Person, graduation window) often live only in the application questions, not in the JD body, so a text screen of the posting misses them. Check the rendered form before investing in a long application.
 - Required video uploads, "best work" uploads and personal-story essays go to the user.
 - A job-tracker browser extension may pop an "Application Submitted!" modal over the success page. It is harmless.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

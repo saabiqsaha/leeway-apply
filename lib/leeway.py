@@ -72,6 +72,31 @@ OUTCOME_TO_STATUS = {
 }
 
 
+def env(key, default=None):
+    """Environment first, then .env in the repo root, then default."""
+    if os.environ.get(key):
+        return os.environ[key]
+    f = REPO / ".env"
+    if f.exists():
+        for line in f.read_text().splitlines():
+            k, _, v = line.partition("=")
+            if k.strip() == key and not k.strip().startswith("#"):
+                return v.strip()
+    return default
+
+
+def add_missing_fact(company, question):
+    """Queue a question only the applicant can answer (profile/missing_facts.md)."""
+    f = PROFILE_DIR / "missing_facts.md"
+    if not f.exists():
+        f.write_text("# missing_facts.md: questions only you can answer\n\n## Open\n")
+    line = f'- [ ] ({now_iso()[:10]}) {company}: "{question.strip()}"'
+    existing = f.read_text()
+    if f'{company}: "{question.strip()}"' not in existing:
+        with open(f, "a") as fh:
+            fh.write(("" if existing.endswith("\n") else "\n") + line + "\n")
+
+
 def now_iso():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 

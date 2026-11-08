@@ -31,3 +31,8 @@ Switching a role from the automation browser to the user's Chrome just to get pa
 ## Pacing
 
 Reputation-scored captchas (Ashby, Greenhouse invisible reCAPTCHA) react to bursts. Interleave platforms instead of running 10 forms on one ATS back to back.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

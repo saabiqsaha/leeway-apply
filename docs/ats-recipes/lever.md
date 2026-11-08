@@ -47,3 +47,8 @@ Some company-specific Lever forms refuse submission even with a valid `selectedL
 ## Gem boards
 
 Gem (`jobs.gem.com/<board>`) takes native value setters and JS radio clicks. Submit with "Apply without saving" (no account). Success reads "Congratulations! Your application ... has been received". In the automation Chrome, Gem raises an hCaptcha drag puzzle on Apply; see `captcha-lanes.md`.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

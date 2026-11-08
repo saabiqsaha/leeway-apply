@@ -17,3 +17,8 @@ Both require sign-in and both keep a saved candidate profile, so treat them like
 - Answer work-authorization and sponsorship questions from `profile/answers.md`. Read the exact wording: "legally authorized to work without restriction" and "now or in the future require sponsorship" are separate questions with possibly different answers.
 - TikTok limits how many applications a candidate can have open per cycle (about 2). Choose the reqs deliberately.
 - Final submit raises a picture CAPTCHA. Hand that click to the user. Never solve a CAPTCHA.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

@@ -20,3 +20,8 @@ About 5 round trips per form. No captcha seen.
 ## Success
 
 The URL reaches `step=confirmation` and the page says "You have successfully applied".
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

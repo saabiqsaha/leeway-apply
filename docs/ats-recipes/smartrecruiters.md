@@ -54,3 +54,8 @@ Knockout questions only appear here, after page 1 is filled (no visa sponsorship
 ## Success
 
 The URL ends in `/success` and the page says "Application submitted!".
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

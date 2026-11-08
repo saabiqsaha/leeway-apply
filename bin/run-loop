@@ -12,11 +12,8 @@ cd "$REPO"
   || { echo "Resume PDF missing (profile.json resume.pdf). Add it first."; exit 1; }
 bin/chrome
 
-PROMPT="Read AGENTS.md fully before anything else, then every file in profile/.
-Then run The Loop from AGENTS.md: claim with bin/next, apply, log with bin/log.
-Apply to up to $BATCH postings this session, then stop and exit cleanly.
-Drive the browser yourself with the Playwright MCP tools (already attached to the running Chrome) and the bin/*.cjs helpers. Read docs/ats-recipes/<platform>.md before your first form on each platform.
-Never invent a fact that is not in profile/. Never pause for confirmation: if a posting cannot be finished truthfully, log why and move on."
+PROMPT="Read START.md and begin. Mode: run, headless. Batch size: $BATCH.
+There is no human watching this session: never ask questions, log skipped:missing_fact instead, and finish with the Step 4 report."
 
 while true; do
   READY=$(python3 - <<'EOF'

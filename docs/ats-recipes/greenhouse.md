@@ -93,3 +93,8 @@ This is the number one hidden blocker.
 ## Playwright MCP
 
 Playwright locators fire trusted events, so react-select commits without most of the synthetic-event workarounds above. The questions-API guard and the hidden phone-country trap still apply. See `browser-driving.md`.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

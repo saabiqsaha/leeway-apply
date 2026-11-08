@@ -19,3 +19,8 @@ The page at `.../applicants` says "SUCCESS! Your application was submitted".
 ## Reading the JD
 
 `curl` of the posting page hits a Cloudflare "Just a moment" wall. Read the JD from the open tab instead (page text in slices of about 1,400 characters) before tailoring.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

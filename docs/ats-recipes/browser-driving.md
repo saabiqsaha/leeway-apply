@@ -108,3 +108,8 @@ Use `HTMLTextAreaElement.prototype` for textareas.
 
 - zsh does not word-split `$var`, so `set -- $pair` loops silently pass one argument. Call scripts with explicit arguments.
 - In zsh, a bare `echo =====` fails (`=` expansion). Quote it: `echo "-----"`.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

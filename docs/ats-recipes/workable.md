@@ -24,3 +24,8 @@ Workable drives cleanly in both the automation Chrome and the user's Chrome. No 
 Workable has a public search API, `jobs.workable.com/api/v1/jobs`, paged with `pageToken`. It is a useful source of postings the big feeds miss. See `sourcing-and-dedup.md`.
 
 Closed postings redirect with `?not_found=true`.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

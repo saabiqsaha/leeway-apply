@@ -33,3 +33,8 @@ Because the profile persists across every application to that employer, it reuse
 
 - The Preferred Locations lookup can return "No results" for every city. It is optional; leave it blank.
 - The public job page can say "Job removed" in its text while the req is still open. Trust the Oracle apply page, not that label.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

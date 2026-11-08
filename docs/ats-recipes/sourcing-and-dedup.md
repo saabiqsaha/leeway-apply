@@ -57,3 +57,8 @@ Some boards also enforce their own limits (an Ashby board rejecting at submit wi
 ## One shot per role
 
 Give each posting one attempt. On failure, log the outcome with a short reason and move to the next. Volume is the strategy: sessions that debug one widget for 20 minutes produce fewer applications than sessions that log and keep moving.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

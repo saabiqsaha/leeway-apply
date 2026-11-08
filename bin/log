@@ -6,7 +6,9 @@ Outcomes:
   assessment_pending      submitted, and the next step is an OA / video (never auto-complete it)
   closed                  posting gone, 404, "no longer accepting"
   ineligible:<reason>     hard disqualifier (e.g. ineligible:no_sponsorship, ineligible:transcript_required)
-  skipped:<reason>        chose not to apply (e.g. skipped:missing_fact, skipped:no_ai_attestation)
+  skipped:<reason>        chose not to apply (e.g. skipped:no_ai_attestation)
+  skipped:missing_fact    a required question needs a fact not in profile/. Put the exact
+                          question text in the note; it is added to profile/missing_facts.md
   account_required        no guest apply
   captcha_blocked         captcha blocked submit twice
   failed:<reason>         tried and it broke (one shot per role: it is NOT retried)
@@ -83,6 +85,9 @@ def main():
     if note:
         event["note"] = note
     leeway.append_event(event)
+    if outcome.startswith("skipped:missing_fact") and note:
+        leeway.add_missing_fact(row["company"] or "?", note)
+        print("  -> question added to profile/missing_facts.md")
 
     n = con.execute("SELECT COUNT(*) FROM applications WHERE cycle=?", (cycle,)).fetchone()[0]
     print(f"[{outcome}] aq={aq_id} {(row['company'] or '')[:30]} | {cycle or 'all'} applied = {n}")

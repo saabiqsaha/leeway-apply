@@ -46,3 +46,8 @@ The agent filling the form is an AI, so some questions cannot be answered truthf
 - Salary expectations: fill only if required, and then use the answer in `profile/answers.md` (for example "Open to discussion").
 - Graduation-window, US Person and export-control gates often appear only in the application questions. Answer them truthfully, and if the truthful answer is a knockout, log `ineligible` instead of submitting.
 - Required video uploads, "best work" uploads and personal-story essays go to the user.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

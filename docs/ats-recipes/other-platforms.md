@@ -64,3 +64,8 @@ Occasionally a posting says the web form is not reviewed and asks candidates to 
 ## Account-walled portals
 
 Workday, iCIMS, UltiPro, Oracle HCM, Avature, Eightfold, Amazon, Microsoft, Apple, TikTok and similar require a candidate account. Log `account_required` unless the user has signed in and asked you to proceed.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

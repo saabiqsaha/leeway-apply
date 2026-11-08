@@ -1,6 +1,8 @@
 # AGENTS.md: how to run leeway-apply
 
 Read this fully before acting. Codex reads it automatically; Claude Code reads it via CLAUDE.md.
+**New session? Start at `START.md`**: it boots you, picks the mode (onboarding, run, refill),
+and sets the rules for reading and writing the brain. This file is the rulebook it points to.
 
 ## What this is
 

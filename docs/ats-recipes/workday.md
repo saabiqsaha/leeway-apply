@@ -22,3 +22,8 @@ Plain "Select One" dropdowns open as an overlay at fixed offsets from the field'
 ## Liveness
 
 Workday reqs close fast. Re-check the posting right before you start a long form.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

@@ -22,3 +22,8 @@ On a validation error the page re-renders at `/applications` with every value ke
 ## Stale forms
 
 Older postings may offer only past terms in a required availability question. Pick the matching season, and state your real availability in a free-text field.
+
+## Field notes
+
+Append dated bullets here when this platform surprises you: what happened, what fixed it.
+Technique only. Never a name, email, phone, school, address, or answer.

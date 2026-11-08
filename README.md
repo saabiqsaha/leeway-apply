@@ -27,18 +27,29 @@ bin/setup
 `bin/setup` installs playwright-core into `.tools/`, creates `profile/` from `profile.example/`,
 creates the database, and registers the Playwright MCP server with Codex.
 
-Then fill in your profile. **Every value is typed into real applications, so it must be true.**
+Then let the agent build your profile with you. It reads your resume, drafts everything it can,
+and asks only what a resume never says (work authorization, EEO choices, companies to avoid):
+
+```bash
+codex "Read START.md and begin."     # Claude Code: /start
+```
+
+`START.md` is the host prompt: how the agent boots, which mode it is in, and how it reads and
+writes the brain (`profile/` = facts, `data/` = memory, `docs/ats-recipes/` = shared skill).
+You can also fill the files by hand. **Every value is typed into real applications, so it must be true.**
 
 | File | What goes in it |
 |---|---|
 | `profile/profile.json` | Name, contact, school, GPA, grad date, work authorization, EEO answers, links, what roles to search for |
 | `profile/answers.md` | Your own words: pitch, "why this company" template, cover letter, projects, odd facts forms ask for |
 | `profile/do_not_apply.txt` | Companies to never auto-apply to (referrals, warm intros, ones you applied to by hand) |
+| `profile/missing_facts.md` | Questions the agent hit that only you can answer (it skips those postings instead of guessing) |
 | `profile/resume.pdf` | Your resume |
 
 ## Run it
 
 ```bash
+bin/check           # is the brain ready? ends with MODE: onboarding | run | refill
 bin/chrome          # start the dedicated browser (its own profile in .chrome-profile/)
 feeds/poll          # fill the queue. First run sweeps ~1,700 boards, ~15 min
 bin/status          # what's queued, what's applied
@@ -57,7 +68,7 @@ Keep the queue fresh with a cron entry (hourly is plenty):
 ### With Claude Code instead
 
 `.mcp.json` already points Playwright MCP at the same Chrome. Open the repo in Claude Code and run
-`/apply 10`.
+`/start` (onboarding or whatever comes next) or `/apply 10` (straight to a batch of 10).
 
 ### Add a posting you found yourself
 
@@ -86,9 +97,10 @@ It goes to the front of the queue.
 ## Where things live
 
 ```
+START.md             the host prompt: boot, modes, how to control the brain
 AGENTS.md            the agent's rulebook (Codex reads it automatically)
 profile.example/     templates; bin/setup copies them to profile/ (gitignored)
-bin/                 setup, chrome, next, log, status, add, run-loop, form helpers (*.cjs)
+bin/                 setup, check, chrome, next, log, status, add, run-loop, form helpers (*.cjs)
 feeds/               pollers, filters, company slug list
 lib/                 shared Python and Node helpers
 docs/ats-recipes/    per-platform form techniques
