@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# bin/setup: one-time setup. Safe to re-run; it never overwrites your profile/.
+set -euo pipefail
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$REPO"
+PW_CORE_VERSION="1.64.1"
+PW_MCP_VERSION="0.0.83"
+ok()   { printf "  \033[32m✓\033[0m %s\n" "$1"; }
+warn() { printf "  \033[33m!\033[0m %s\n" "$1"; }
+
+echo "leeway-apply setup"
+
+python3 -c 'import sys; assert sys.version_info >= (3, 9)' 2>/dev/null \
+  && ok "python3 $(python3 -c 'import platform;print(platform.python_version())')" \
+  || { echo "Need Python 3.9+"; exit 1; }
+node -e 'process.exit(+process.versions.node.split(".")[0] >= 18 ? 0 : 1)' 2>/dev/null \
+  && ok "node $(node --version)" || { echo "Need Node 18+"; exit 1; }
+command -v sqlite3 >/dev/null && ok "sqlite3" || warn "sqlite3 CLI not found (optional, for poking at data/leeway.db)"
+
+if [ ! -d .tools/node_modules/playwright-core ]; then
+  npm install --silent --no-audit --no-fund --prefix .tools "playwright-core@$PW_CORE_VERSION"
+fi
+ok "playwright-core $PW_CORE_VERSION in .tools/"
+
+if [ ! -d profile ]; then
+  cp -R profile.example profile
+  ok "created profile/ from profile.example/ (FILL IT IN before applying)"
+else
+  ok "profile/ exists (left untouched)"
+fi
+[ -f .env ] || { cp .env.example .env; ok "created .env"; }
+
+python3 -c "import sys; sys.path.insert(0, 'lib'); import leeway; leeway.db().close()"
+ok "database at data/leeway.db"
+
+chmod +x bin/* feeds/poll feeds/*.py 2>/dev/null || true
+
+PORT="$(grep -E '^CDP_PORT=' .env 2>/dev/null | cut -d= -f2)"; PORT="${PORT:-9333}"
+MCP_ARGS=(npx -y "@playwright/mcp@$PW_MCP_VERSION" --cdp-endpoint "http://127.0.0.1:$PORT")
+if command -v codex >/dev/null; then
+  if codex mcp get playwright >/dev/null 2>&1; then
+    ok "codex already has a 'playwright' MCP server (check it uses --cdp-endpoint http://127.0.0.1:$PORT: codex mcp get playwright)"
+  else
+    codex mcp add playwright -- "${MCP_ARGS[@]}" >/dev/null && ok "registered Playwright MCP with codex (attaches to bin/chrome on CDP $PORT)"
+  fi
+else
+  warn "codex not found. Install: npm i -g @openai/codex, then re-run bin/setup"
+fi
+
+cat <<EOF
+
+Next:
+  1. Fill in profile/profile.json, profile/answers.md, profile/do_not_apply.txt
+  2. Put your resume at profile/resume.pdf
+  3. bin/chrome                 start the dedicated browser, sign in to nothing
+  4. feeds/poll                 fill the queue (first run takes ~15 min)
+  5. bin/status                 see what's queued
+  6. bin/run-loop 10            let Codex apply, 10 per session
+EOF

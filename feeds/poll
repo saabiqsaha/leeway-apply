@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# feeds/poll: run every feed once. Safe to cron (hourly is plenty):
+#   0 * * * * cd /path/to/leeway-apply && feeds/poll >> data/poll.log 2>&1
+set -uo pipefail
+cd "$(dirname "$0")/.."
+echo "[$(date -u +%FT%TZ)] poll start"
+python3 feeds/github_lists.py
+python3 feeds/ats_poller.py
+echo "[$(date -u +%FT%TZ)] poll done"

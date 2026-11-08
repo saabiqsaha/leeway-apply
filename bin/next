@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""bin/next [agent_name]: claim the next posting worth applying to and print it as JSON.
+
+Every guard runs here so the agent never has to remember them:
+  - atomic claim (two agents can never get the same row)
+  - dedup against past applications by URL, req id / ATS UUID, and company+title
+  - profile/do_not_apply.txt (warm intros, manual applies)
+  - search.max_applications_per_company for the current cycle
+Rows that fail a guard are closed out and logged; the loop moves on.
+
+Exit code 0 with a JSON object on success, exit 3 with {"empty": true} when the queue is dry.
+"""
+import json
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "feeds"))
+import leeway  # noqa: E402
+from url_gate import is_reachable, platform_for  # noqa: E402
+
+STALE_CLAIM_HOURS = 3
+
+
+def close(con, aq_id, posting_id, status, outcome, row):
+    con.execute("UPDATE postings SET status=? WHERE id=?", (status, posting_id))
+    con.execute("UPDATE apply_queue SET completed_at=?, outcome=? WHERE id=?",
+                (leeway.now_iso(), outcome, aq_id))
+    con.commit()
+    leeway.append_event({"track": "jobs", "company": row["company"], "role": row["title"],
+                         "url": row["url"], "outcome": outcome, "by": "bin/next"})
+
+
+def main():
+    agent = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("LEEWAY_AGENT", "codex")
+    profile = leeway.load_profile()
+    search = profile.get("search", {})
+    cycle = search.get("cycle", "")
+    cap = int(search.get("max_applications_per_company", 0) or 0)
+    blocked = leeway.do_not_apply(profile)
+    con = leeway.db()
+
+    con.execute(
+        "UPDATE apply_queue SET claimed_by=NULL, claimed_at=NULL "
+        "WHERE completed_at IS NULL AND claimed_at < datetime('now', ?)",
+        (f"-{STALE_CLAIM_HOURS} hours",),
+    )
+    con.commit()
+
+    while True:
+        row = con.execute(
+            "SELECT aq.id AS aq_id, p.id AS posting_id, p.url, p.title, p.company, p.platform, "
+            "p.location, p.priority FROM apply_queue aq JOIN postings p ON aq.posting_id=p.id "
+            "WHERE aq.claimed_by IS NULL AND aq.completed_at IS NULL AND p.status='new' "
+            "ORDER BY p.priority DESC, p.first_seen ASC LIMIT 1"
+        ).fetchone()
+        if not row:
+            print(json.dumps({"empty": True}))
+            sys.exit(3)
+
+        claimed = con.execute(
+            "UPDATE apply_queue SET claimed_by=?, claimed_at=datetime('now') "
+            "WHERE id=? AND claimed_by IS NULL",
+            (agent, row["aq_id"]),
+        ).rowcount
+        con.commit()
+        if not claimed:
+            continue
+
+        row = dict(row)
+        if leeway.is_short_link(row["url"]):
+            final = leeway.resolve_url(row["url"])
+            if final != row["url"]:
+                if con.execute("SELECT 1 FROM postings WHERE url=?", (final,)).fetchone():
+                    close(con, row["aq_id"], row["posting_id"], "skipped", "duplicate:url", row)
+                    continue
+                con.execute("UPDATE postings SET url=?, platform=? WHERE id=?",
+                            (final, platform_for(final), row["posting_id"]))
+                con.commit()
+                row["url"], row["platform"] = final, platform_for(final)
+
+        ok, why = is_reachable(row["url"])
+        if not ok:
+            outcome = "account_required" if why.startswith("account_required") else f"skipped:{why}"
+            close(con, row["aq_id"], row["posting_id"], "blocked" if outcome == "account_required" else "skipped", outcome, row)
+            continue
+
+        company = (row["company"] or "").lower()
+        if any(name in company for name in blocked):
+            close(con, row["aq_id"], row["posting_id"], "reserved_manual", "reserved_manual", row)
+            continue
+
+        dup = leeway.duplicate_reason(con, row["url"], row["company"], row["title"])
+        if dup:
+            close(con, row["aq_id"], row["posting_id"], "skipped", dup, row)
+            continue
+
+        if cap and leeway.company_application_count(con, row["company"], cycle) >= cap:
+            close(con, row["aq_id"], row["posting_id"], "skipped", "skipped:company_cap", row)
+            continue
+
+        out = row
+        out["resume"] = str(leeway.resume_path(profile))
+        out["cycle"] = cycle
+        out["log_hint"] = f"bin/log {row['aq_id']} <outcome> \"<note>\""
+        print(json.dumps(out, indent=2))
+        return
+
+
+if __name__ == "__main__":
+    main()

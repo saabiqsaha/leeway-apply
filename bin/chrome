@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# bin/chrome: start the ONE Chrome the agent drives.
+#
+# A dedicated, persistent profile (.chrome-profile/) so job boards see a returning
+# browser with cookies and Cloudflare clearances, not a fresh bot. Remote debugging
+# on CDP_PORT so both Playwright MCP (--cdp-endpoint) and the bin/*.cjs helpers
+# attach to the same tabs. Never point this at your personal Chrome profile.
+set -euo pipefail
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+# .env fills in anything not already set in the environment (the environment wins).
+if [ -f "$REPO/.env" ]; then
+  while IFS='=' read -r k v; do
+    case "$k" in ''|\#*) continue ;; esac
+    if [ -z "${!k:-}" ]; then export "$k=$v"; fi
+  done < "$REPO/.env"
+fi
+PORT="${CDP_PORT:-9333}"
+PROFILE_DIR="${CHROME_PROFILE_DIR:-$REPO/.chrome-profile}"
+
+if curl -fs "http://127.0.0.1:$PORT/json/version" >/dev/null 2>&1; then
+  echo "Chrome already listening on CDP $PORT"
+  exit 0
+fi
+
+CHROME="${CHROME_EXECUTABLE_PATH:-}"
+if [ -z "$CHROME" ]; then
+  for c in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+           "$(command -v google-chrome 2>/dev/null || true)" \
+           "$(command -v google-chrome-stable 2>/dev/null || true)" \
+           "$(command -v chromium 2>/dev/null || true)"; do
+    if [ -n "$c" ] && [ -x "$c" ]; then CHROME="$c"; break; fi
+  done
+fi
+[ -z "$CHROME" ] && { echo "Chrome not found. Set CHROME_EXECUTABLE_PATH in .env"; exit 1; }
+
+mkdir -p "$PROFILE_DIR"
+nohup "$CHROME" \
+  --remote-debugging-port="$PORT" \
+  --user-data-dir="$PROFILE_DIR" \
+  --no-first-run --no-default-browser-check \
+  --window-size=1400,1000 \
+  about:blank >/dev/null 2>&1 &
+
+for _ in $(seq 1 30); do
+  if curl -fs "http://127.0.0.1:$PORT/json/version" >/dev/null 2>&1; then
+    echo "Chrome up on CDP $PORT (profile: $PROFILE_DIR)"
+    exit 0
+  fi
+  sleep 0.5
+done
+echo "Chrome did not open CDP $PORT. If another Chrome uses $PROFILE_DIR, quit it and retry."
+exit 1

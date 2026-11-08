@@ -1,0 +1,92 @@
+{
+  "_help": "Copy of this file lives at profile/profile.json (gitignored). Every value here is typed into real application forms, so it must be true. Keys starting with _ are ignored.",
+
+  "identity": {
+    "first_name": "Ada",
+    "last_name": "Lovelace",
+    "preferred_name": "Ada",
+    "email": "ada@example.com",
+    "phone": "5555550123",
+    "pronouns": "she/her"
+  },
+
+  "location": {
+    "_help": "Where you live now. Used for city/state/zip/address fields.",
+    "address_line1": "123 Main Street",
+    "city": "Springfield",
+    "state": "Illinois",
+    "postal_code": "62701",
+    "country": "United States",
+    "country_long": "United States of America"
+  },
+
+  "links": {
+    "linkedin": "https://www.linkedin.com/in/your-handle/",
+    "github": "https://github.com/your-handle",
+    "website": ""
+  },
+
+  "education": {
+    "school": "Example State University",
+    "_school_help": "If your school is often missing from dropdowns, set school_fallback to the option forms use instead (usually 'Other').",
+    "school_fallback": "Other",
+    "degree": "Bachelor of Science",
+    "degree_short": "Bachelor",
+    "major": "Computer Science",
+    "gpa": "3.8",
+    "start_month": "August",
+    "start_year": "2024",
+    "grad_month": "May",
+    "grad_year": "2028",
+    "grad_term": "Spring",
+    "currently_enrolled": true,
+    "prior_internships": "1"
+  },
+
+  "work_auth": {
+    "_help": "Answer truthfully. requires_sponsorship covers 'now or in the future'. visa_status is free text shown where forms ask (e.g. 'US Citizen', 'Permanent Resident', 'F-1 student, eligible for CPT/OPT').",
+    "authorized_us": true,
+    "requires_sponsorship": false,
+    "visa_status": "US Citizen",
+    "cpt_eligible": false,
+    "us_citizen": true,
+    "security_clearance": false
+  },
+
+  "eeo": {
+    "_help": "Voluntary self-identification. Leave the decline values unless you want to answer. Greenhouse matches option text, so keep these close to the standard wording.",
+    "gender": "Decline To Self Identify",
+    "gender_identity": "I don't wish to answer",
+    "transgender": "I don't wish to answer",
+    "sexual_orientation": "I don't wish to answer",
+    "hispanic": "Decline To Self Identify",
+    "race": "Decline To Self Identify",
+    "veteran": "I don't wish to answer",
+    "disability": "I do not want to answer"
+  },
+
+  "preferences": {
+    "willing_to_relocate": true,
+    "open_to_onsite": true,
+    "start_date": "As soon as possible / open to discussion",
+    "heard_about": "Company website",
+    "salary": "Open to discussion",
+    "available_full_time_during_internship": true
+  },
+
+  "resume": {
+    "_help": "Path relative to the repo root. One PDF used for every application unless you tailor per role.",
+    "pdf": "profile/resume.pdf"
+  },
+
+  "search": {
+    "_help": "Filters for the pollers. A title must contain one level keyword AND one role keyword, and none of the exclude keywords.",
+    "cycle": "summer2027",
+    "level_keywords": ["intern", "internship", "co-op", "coop"],
+    "role_keywords": ["software", "engineer", "developer", "swe", "sde", "data", "machine learning", "ml", "ai", "backend", "frontend", "full stack", "fullstack", "platform", "infrastructure", "research", "analytics"],
+    "exclude_keywords": ["senior", "staff", "principal", "director", "manager", "phd", "ph.d", "doctorate", "security clearance", "top secret", "ts/sci", "contractor"],
+    "boost_keywords": {"machine learning": 3, "ai": 3, "software": 2, "backend": 2, "data": 2, "summer 2027": 1},
+    "us_only": true,
+    "max_applications_per_company": 2
+  }
+}

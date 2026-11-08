@@ -1,0 +1,10 @@
+# Companies the agent must NEVER auto-apply to. One per line, case-insensitive,
+# matched as a substring of the company name. Lines after # are comments.
+#
+# Put a company here when you have a warm intro or referral there, already
+# applied by hand, or simply don't want an automated application under your name.
+# A burned referral costs more than a missed posting.
+#
+# examples:
+# acme robotics     # recruiter intro, applying by hand
+# initech           # already applied manually

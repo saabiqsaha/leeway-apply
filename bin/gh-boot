@@ -1,0 +1,108 @@
+#!/usr/bin/env node
+/* bin/gh-boot: build the injectable Greenhouse filler from your profile.
+ *
+ *   bin/gh-boot            writes .cache/gh_boot.js and prints its path
+ *   bin/gh-boot --print    prints the bundle to stdout
+ *
+ * The bundle = window.__P (your fixed field values) + window.RULES (label regex ->
+ * answer, most specific first) + bin/gh_boot.engine.js. Inject it once per page,
+ * then drive: __fill(), __mkq(), then __no()/__nc() pairs with a ~1s wait between,
+ * __sweep(), __missing(), __sub(). See docs/ats-recipes/greenhouse.md.
+ *
+ * Extra rules: profile/form_rules.json, a list of ["regex source", "answer"] pairs.
+ * They are checked BEFORE the generated ones, so they win.
+ */
+const fs = require('node:fs');
+const path = require('node:path');
+const pw = require('../lib/pw.cjs');
+
+const P = pw.profile();
+const id = P.identity || {}, loc = P.location || {}, links = P.links || {};
+const ed = P.education || {}, auth = P.work_auth || {}, eeo = P.eeo || {}, pref = P.preferences || {};
+const yn = (b) => (b ? 'Yes' : 'No');
+
+const rules = [];
+const add = (re, answer) => { if (answer !== undefined && answer !== null && answer !== '') rules.push([re, String(answer)]); };
+
+const extraFile = path.join(process.env.LEEWAY_PROFILE_DIR || path.join(pw.REPO, 'profile'), 'form_rules.json');
+if (fs.existsSync(extraFile)) {
+  for (const [src, answer] of JSON.parse(fs.readFileSync(extraFile, 'utf8'))) add(src, answer);
+}
+
+// Order matters: specific phrasings first, catch-alls last.
+add('are you (a |an )?(current|currently)([- ]?time)? ?(university |college )?student|current university student', yn(ed.currently_enrolled));
+add('are you (currently )?enrolled|enrolled in (a|an|any)', yn(ed.currently_enrolled));
+add('what degree are you|degree you are pursuing|degree currently pursuing', ed.degree_short);
+if (ed.grad_year) add(`^(?!.*\\b(before|prior to|earlier than)\\b).*graduat\\w*[^?]*\\b(${(ed.grad_month || '').toLowerCase()} ${ed.grad_year}|${(ed.grad_term || '').toLowerCase()} ${ed.grad_year}|${ed.grad_year})\\b`, 'Yes');
+add('^discipline|area of study|^major', ed.major);
+add('transgender', eeo.transgender);
+add('gender identity', eeo.gender_identity);
+add('i acknowledge that i have read|i confirm all answers', 'I Acknowledge / I Agree');
+add('legal authorization to work in the geographic region', yn(auth.authorized_us));
+add('^veteran status', eeo.veteran);
+add('commence/sponsor|commence or sponsor|sponsor an immigration', yn(auth.requires_sponsorship));
+add('sexual orientation', eeo.sexual_orientation);
+add('^what is your gpa|gpa\\?', ed.gpa);
+add('available for a full-?time role|40 hours per week', yn(pref.available_full_time_during_internship));
+add('how many prior internship|internships? .*completed', ed.prior_internships);
+add('when do you expect to graduate', ed.grad_term && ed.grad_year ? `${ed.grad_term} ${ed.grad_year}` : '');
+add('how did you hear about', pref.heard_about);
+add('willing to self-?relocate', yn(pref.willing_to_relocate));
+add('state of primary residency', loc.state);
+if (auth.cpt_eligible) add('curricular practical training|cpt.*f-1', 'Yes');
+add('require employer sponsorship to maintain', yn(auth.requires_sponsorship));
+add('willing and able to accommodate|based out of our|willing to (relocate|work|commute)|able to (be located|commute|relocate|work)|report to the office|onsite|in[- ]office|hybrid', yn(pref.open_to_onsite));
+add('country of residence|country (do )?you (currently )?reside', loc.country_long || loc.country);
+add('require .*sponsorship|sponsorship .*(now|future)|need .*sponsorship|visa sponsorship|sponsorship to (work|continue)', yn(auth.requires_sponsorship));
+add('eligible to work|legally authorized|authorized to work|work authorization|permanently authorized', yn(auth.authorized_us));
+add('zip code|postal code', loc.postal_code);
+add('^city$', loc.city);
+add('^state|province', loc.state);
+add('address line 1|street address', loc.address_line1);
+add('^country', loc.country);
+add('hispanic|latino', eeo.hispanic);
+add('disability', eeo.disability);
+add('veteran', eeo.veteran);
+add('race|ethnicity', eeo.race);
+add('gender', eeo.gender);
+add('pronoun', id.pronouns);
+add('linkedin', links.linkedin);
+add('github', links.github);
+add('website|portfolio|personal site', links.website);
+
+const fixed = {
+  text_fields: [
+    ['first_name', id.first_name], ['last_name', id.last_name], ['preferred_name', id.preferred_name],
+    ['email', id.email], ['phone', id.phone], ['end-year--0', ed.grad_year],
+  ],
+  select_fields: [
+    ['country', loc.country], ['school--0', ed.school], ['degree--0', ed.degree_short],
+    ['end-month--0', ed.grad_month],
+  ],
+  eeo_selects: [
+    ['hispanic_ethnicity', eeo.hispanic], ['race', eeo.race],
+    ['veteran_status', eeo.veteran], ['disability_status', eeo.disability],
+  ],
+  school_fallback: ed.school_fallback || 'Other',
+  outside_work: (P.answers || {}).outside_work || '',
+};
+
+const header =
+  '// GENERATED by bin/gh-boot from profile/profile.json. Do not commit or edit; rebuild instead.\n' +
+  `window.__P = ${JSON.stringify(fixed)};\n` +
+  'window.RULES = [\n' +
+  rules.map(([re, a]) => `  [new RegExp(${JSON.stringify(re)}, 'i'), ${JSON.stringify(a)}],`).join('\n') +
+  '\n];\n';
+const engine = fs.readFileSync(path.join(__dirname, 'gh_boot.engine.js'), 'utf8')
+  .replace('window.RULES = window.RULES || [];', '')
+  .replace('window.__P = window.__P || {};', '');
+const bundle = header + engine;
+
+if (process.argv.includes('--print')) {
+  process.stdout.write(bundle);
+} else {
+  const out = path.join(pw.REPO, '.cache', 'gh_boot.js');
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, bundle);
+  console.log(out);
+}

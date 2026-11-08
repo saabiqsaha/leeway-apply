@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""bin/log <aq_id> <outcome> [note]: record what happened to a claimed posting.
+
+Outcomes:
+  applied                 confirmation page or email seen
+  assessment_pending      submitted, and the next step is an OA / video (never auto-complete it)
+  closed                  posting gone, 404, "no longer accepting"
+  ineligible:<reason>     hard disqualifier (e.g. ineligible:no_sponsorship, ineligible:transcript_required)
+  skipped:<reason>        chose not to apply (e.g. skipped:missing_fact, skipped:no_ai_attestation)
+  account_required        no guest apply
+  captcha_blocked         captcha blocked submit twice
+  failed:<reason>         tried and it broke (one shot per role: it is NOT retried)
+  release                 hand the row back untouched (only if the form was never opened)
+
+Writes all three stores: postings.status, apply_queue, applications (on applied),
+plus data/event_log.jsonl.
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+import leeway  # noqa: E402
+
+
+def status_for(outcome):
+    if outcome in ("applied", "assessment_pending"):
+        return "applied"
+    for prefix, status in (("closed", "closed"), ("ineligible", "ineligible"),
+                           ("skipped", "skipped"), ("account_required", "blocked"),
+                           ("captcha", "blocked"), ("failed", "failed"),
+                           ("reserved", "reserved_manual")):
+        if outcome.startswith(prefix):
+            return status
+    raise SystemExit(f"Unknown outcome '{outcome}'. See bin/log --help.")
+
+
+def main():
+    if len(sys.argv) < 3 or sys.argv[1] in ("-h", "--help"):
+        print(__doc__)
+        sys.exit(0 if len(sys.argv) > 1 else 1)
+    aq_id, outcome = int(sys.argv[1]), sys.argv[2].strip()
+    note = sys.argv[3] if len(sys.argv) > 3 else ""
+    profile = leeway.load_profile()
+    cycle = profile.get("search", {}).get("cycle", "")
+    con = leeway.db()
+
+    row = con.execute(
+        "SELECT p.id, p.url, p.title, p.company, p.platform FROM apply_queue aq "
+        "JOIN postings p ON aq.posting_id=p.id WHERE aq.id=?", (aq_id,)
+    ).fetchone()
+    if not row:
+        raise SystemExit(f"No apply_queue row {aq_id}")
+
+    if outcome == "release":
+        con.execute("UPDATE apply_queue SET claimed_by=NULL, claimed_at=NULL WHERE id=?", (aq_id,))
+        con.commit()
+        print(f"[release] aq={aq_id} back in the queue")
+        return
+
+    status = status_for(outcome)
+    resume_file = leeway.resume_path(profile)
+    try:
+        resume = str(resume_file.relative_to(leeway.REPO))
+    except ValueError:
+        resume = str(resume_file)
+    ts = leeway.now_iso()
+    con.execute("UPDATE postings SET status=? WHERE id=?", (status, row["id"]))
+    con.execute("UPDATE apply_queue SET completed_at=?, outcome=?, notes=? WHERE id=?",
+                (ts, outcome, note, aq_id))
+    if status == "applied":
+        con.execute(
+            "INSERT OR IGNORE INTO applications (company, role, url, platform, resume_used, cycle, "
+            "status, applied_at, notes) VALUES (?,?,?,?,?,?,?,?,?)",
+            (row["company"], row["title"], row["url"], row["platform"], resume, cycle,
+             outcome, ts, note),
+        )
+    con.commit()
+
+    event = {"track": "jobs", "cycle": cycle, "company": row["company"], "role": row["title"],
+             "url": row["url"], "outcome": outcome}
+    if status == "applied":
+        event["resume"] = resume
+    if note:
+        event["note"] = note
+    leeway.append_event(event)
+
+    n = con.execute("SELECT COUNT(*) FROM applications WHERE cycle=?", (cycle,)).fetchone()[0]
+    print(f"[{outcome}] aq={aq_id} {(row['company'] or '')[:30]} | {cycle or 'all'} applied = {n}")
+
+
+if __name__ == "__main__":
+    main()

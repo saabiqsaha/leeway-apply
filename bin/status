@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""bin/status: queue and application counts at a glance."""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+import leeway  # noqa: E402
+
+
+def main():
+    profile = leeway.load_profile(required=False)
+    cycle = profile.get("search", {}).get("cycle", "")
+    con = leeway.db()
+
+    ready = con.execute(
+        "SELECT COUNT(*) FROM apply_queue aq JOIN postings p ON aq.posting_id=p.id "
+        "WHERE aq.claimed_by IS NULL AND aq.completed_at IS NULL AND p.status='new'"
+    ).fetchone()[0]
+    in_flight = con.execute(
+        "SELECT COUNT(*) FROM apply_queue WHERE claimed_by IS NOT NULL AND completed_at IS NULL"
+    ).fetchone()[0]
+    applied_cycle = con.execute(
+        "SELECT COUNT(*) FROM applications WHERE cycle=?", (cycle,)
+    ).fetchone()[0]
+    applied_all = con.execute("SELECT COUNT(*) FROM applications").fetchone()[0]
+
+    print("===== leeway-apply =====")
+    print(f"  Cycle:                 {cycle or '(set search.cycle in profile.json)'}")
+    print(f"  Applied this cycle:    {applied_cycle}   (all time: {applied_all})")
+    print(f"  Ready in queue:        {ready}")
+    print(f"  Claimed, in progress:  {in_flight}")
+    for status, n in con.execute(
+        "SELECT status, COUNT(*) FROM postings WHERE status NOT IN ('new','applied') "
+        "GROUP BY status ORDER BY 2 DESC"
+    ):
+        print(f"  {status + ':':<22} {n}")
+
+    print("\nNext up:")
+    for r in con.execute(
+        "SELECT p.priority, p.company, p.title, p.platform FROM apply_queue aq "
+        "JOIN postings p ON aq.posting_id=p.id WHERE aq.claimed_by IS NULL "
+        "AND aq.completed_at IS NULL AND p.status='new' "
+        "ORDER BY p.priority DESC, p.first_seen ASC LIMIT 5"
+    ):
+        print(f"  [{r[0]}] {r[1]}: {r[2]} ({r[3]})")
+
+    print("\nLast applied:")
+    for r in con.execute(
+        "SELECT applied_at, company, role FROM applications ORDER BY applied_at DESC LIMIT 5"
+    ):
+        print(f"  {r[0][:16]}  {r[1]}: {r[2]}")
+
+
+if __name__ == "__main__":
+    main()

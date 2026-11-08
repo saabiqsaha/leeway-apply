@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""bin/add <url> [company] [title]: put a posting you found yourself at the front of the queue."""
+import sys
+from pathlib import Path
+from urllib.parse import urlparse
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "feeds"))
+import leeway  # noqa: E402
+from url_gate import platform_for  # noqa: E402
+
+
+def main():
+    if len(sys.argv) < 2:
+        raise SystemExit(__doc__)
+    url = sys.argv[1]
+    company = sys.argv[2] if len(sys.argv) > 2 else (urlparse(url).hostname or "")
+    title = sys.argv[3] if len(sys.argv) > 3 else ""
+    con = leeway.db()
+    dup = leeway.duplicate_reason(con, url, company, title)
+    if dup:
+        raise SystemExit(f"Not added, already applied ({dup})")
+    queued = leeway.DedupIndex(con, include_postings=True).reason(url, company, title)
+    if queued:
+        raise SystemExit(f"Not added, already in the queue ({queued})")
+    if leeway.insert_posting(con, url, title, company, platform_for(url), "manual", priority=100):
+        con.commit()
+        print(f"Queued at top priority: {company} {title}".rstrip())
+    else:
+        print("Already in the queue.")
+
+
+if __name__ == "__main__":
+    main()

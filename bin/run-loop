@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# bin/run-loop [batch_size]: run headless Codex sessions back to back until the queue is dry.
+# Each session applies to up to batch_size postings, then exits; this relaunches.
+# Ctrl+C to stop. Watch progress with bin/status in another terminal.
+set -euo pipefail
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+BATCH="${1:-10}"
+cd "$REPO"
+
+[ -f profile/profile.json ] || { echo "No profile/profile.json. Run bin/setup first."; exit 1; }
+[ -f "$(python3 -c "import sys;sys.path.insert(0,'lib');import leeway;print(leeway.resume_path())")" ] \
+  || { echo "Resume PDF missing (profile.json resume.pdf). Add it first."; exit 1; }
+bin/chrome
+
+PROMPT="Read AGENTS.md fully before anything else, then every file in profile/.
+Then run The Loop from AGENTS.md: claim with bin/next, apply, log with bin/log.
+Apply to up to $BATCH postings this session, then stop and exit cleanly.
+Drive the browser yourself with the Playwright MCP tools (already attached to the running Chrome) and the bin/*.cjs helpers. Read docs/ats-recipes/<platform>.md before your first form on each platform.
+Never invent a fact that is not in profile/. Never pause for confirmation: if a posting cannot be finished truthfully, log why and move on."
+
+while true; do
+  READY=$(python3 - <<'EOF'
+import sys; sys.path.insert(0, "lib"); import leeway
+con = leeway.db()
+print(con.execute("SELECT COUNT(*) FROM apply_queue aq JOIN postings p ON aq.posting_id=p.id "
+                  "WHERE aq.claimed_by IS NULL AND aq.completed_at IS NULL AND p.status='new'").fetchone()[0])
+EOF
+)
+  if [ "$READY" -eq 0 ]; then
+    echo "[$(date +%H:%M:%S)] Queue empty. Run feeds/poll to refill. Stopping."
+    exit 0
+  fi
+  echo "[$(date +%H:%M:%S)] $READY ready. Launching Codex batch of $BATCH..."
+  codex exec -C "$REPO" \
+    -s workspace-write -c sandbox_workspace_write.network_access=true \
+    "$PROMPT" || true
+  echo "[$(date +%H:%M:%S)] Session ended."
+  bin/status | sed -n '2,4p'
+  sleep 5
+done
